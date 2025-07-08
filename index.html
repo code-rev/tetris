@@ -7,7 +7,7 @@
     body { background: #222; color: #fff; font-family: sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; height: 100vh; }
     #container { display: flex; align-items: flex-start; margin-top: 20px; }
     #game { border: 2px solid #555; background: #000; display: block; }
-    #score { margin: 10px; text-align: center; }
+    #score, #level { margin: 10px; text-align: center; }
     .controls { margin-left: 40px; text-align: left; line-height: 1.6; }
     .controls h2 { margin-bottom: 10px; font-size: 18px; }
     .controls p { margin: 4px 0; }
@@ -17,8 +17,10 @@
   <div id="container">
     <div>
       <h1 style="text-align:center;">테트리스</h1>
-      <canvas id="game" width="200" height="400"></canvas>
+      <!-- 칸 크기를 30×30으로 확대하여 더 넓게 표시 -->
+      <canvas id="game" width="300" height="600"></canvas>
       <div id="score">점수: <span id="scoreValue">0</span></div>
+      <div id="level">난이도: <span id="levelValue">1</span></div>
     </div>
     <div class="controls">
       <h2>단축키</h2>
@@ -28,17 +30,22 @@
       <p><strong>Space</strong> : 하드 드롭</p>
       <p><strong>P</strong> : 일시정지/재개</p>
       <p><strong>N</strong> : 새 게임 (게임 오버 후)</p>
+      <p><strong>1~5</strong> : 난이도 설정 (1=느림, 5=매우 빠름)</p>
     </div>
   </div>
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    const scale = 20;
+    const scale = 30;                // ← 한 칸 크기 확대
     const cols = 10;
     const rows = 20;
+
+    const levels = [1000, 800, 600, 400, 250]; // 각 난이도별 드롭 간격(ms)
+    let level = 1;
+    let dropInterval = levels[level - 1];
+
     let board = createMatrix(cols, rows);
     let score = 0;
-    let dropInterval = 1000;
     let lastTime = 0;
     let dropCounter = 0;
     let gameOver = false;
@@ -107,12 +114,10 @@
       }
     }
 
-    function playerMove(dir) {
-      player.pos.x += dir; if (collide(board, player)) player.pos.x -= dir;
-    }
+    function playerMove(dir) { player.pos.x += dir; if (collide(board, player)) player.pos.x -= dir; }
 
     function rotate(matrix, dir) {
-      for (let y = 0; y < matrix.length; ++y) 
+      for (let y = 0; y < matrix.length; ++y)
         for (let x = 0; x < y; ++x) [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
       if (dir > 0) matrix.forEach(row => row.reverse()); else matrix.reverse();
     }
@@ -166,6 +171,15 @@
 
     function updateScore() { document.getElementById('scoreValue').innerText = score; }
 
+    function updateLevel() { document.getElementById('levelValue').innerText = level; }
+
+    function setLevel(l) {
+      level = l;
+      dropInterval = levels[level - 1];
+      dropCounter = 0;
+      updateLevel();
+    }
+
     const player = { pos: { x: 0, y: 0 }, matrix: null };
 
     document.addEventListener('keydown', event => {
@@ -181,6 +195,11 @@
           player.pos.y--; merge(board, player); sweep(); updateScore(); playerReset(); dropCounter = 0;
           break;
         case 'p': case 'P': paused = !paused; if (!paused) update(); break;
+        case '1': setLevel(1); break;
+        case '2': setLevel(2); break;
+        case '3': setLevel(3); break;
+        case '4': setLevel(4); break;
+        case '5': setLevel(5); break;
         case 'n': case 'N': break;
       }
     });
